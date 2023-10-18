@@ -1,4 +1,4 @@
-package com.jameserrington.lox;
+package app.src.main.java.lox;
 
 public class Token {
     final TokenType type;

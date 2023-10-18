@@ -3,6 +3,8 @@ package app.src.main.java.lox;
 import java.util.ArrayList;
 import java.util.List;
 
+import static app.src.main.java.lox.TokenType.*; 
+
 public class Scanner {
     private final String source;
     private final List<Token> tokens = new ArrayList<>();
@@ -20,27 +22,89 @@ public class Scanner {
             scanToken();
         }
 
-        tokens.add(new Token(TokenType.EOF, "", null, line));
+        tokens.add(new Token(EOF, "", null, line));
         return tokens;
     }
 
     private void scanToken() {
         var c = advance();
         switch (c) {
-            case '(': addToken(TokenType.LEFT_PAREN); break;
-            case ')': addToken(TokenType.RIGHT_PAREN); break;
-            case '{': addToken(TokenType.LEFT_BRACE); break;
-            case '}': addToken(TokenType.RIGHT_BRACE); break;
-            case ',': addToken(TokenType.COMMA); break;
-            case '.': addToken(TokenType.DOT); break;
-            case '-': addToken(TokenType.MINUS); break;
-            case '+': addToken(TokenType.PLUS); break;
-            case ';': addToken(TokenType.SEMICOLON); break;
-            case '*': addToken(TokenType.ASTERISK); break;
+            case '(': addToken(LEFT_PAREN); break;
+            case ')': addToken(RIGHT_PAREN); break;
+            case '{': addToken(LEFT_BRACE); break;
+            case '}': addToken(RIGHT_BRACE); break;
+            case ',': addToken(COMMA); break;
+            case '.': addToken(DOT); break;
+            case '-': addToken(MINUS); break;
+            case '+': addToken(PLUS); break;
+            case ';': addToken(SEMICOLON); break;
+            case '*': addToken(ASTERISK); break;
+            case '!':
+                addToken(match('=') ? BANG_EQUAL : BANG);
+                break;
+            case '=':
+                addToken(match('=') ? EQUAL_EQUAL : EQUAL);
+                break;
+            case '<':
+                addToken(match('=') ? LESS_EQUAL : LESS);
+                break;
+            case '>':
+                addToken(match('=') ? GREATER_EQUAL : GREATER);
+                break;
+            case '/':
+                if (match('/')) {
+                  // A comment goes until the end of the line.
+                  while (peek() != '\n' && !isAtEnd()) advance();
+                } else {
+                  addToken(SLASH);
+                }
+                break;
+            case ' ':
+            case '\r':
+            case '\t':
+                  // Ignore whitespace.
+                  break;
+            case '\n':
+                  line++;
+                  break;
+            case '"':
+                string();
+                break;
             default:
                 Lox.error(line, "Unexpected character.");
                 break;
         }
+    }
+
+    private void string() {
+        while (peek() != '"' && !isAtEnd()) {
+            if (peek() == '\n') {
+                line++;
+            }
+            advance();
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated string.");
+        }
+
+        advance();
+
+        var value = source.substring(start + 1, current - 1);
+        addToken(STRING, value);
+    }
+
+    private boolean match(char expected) {
+        if (isAtEnd()) return false;
+        if (source.charAt(current) != expected) return false;
+
+        current++;
+        return true;
+    }
+
+    private char peek() {
+        if (isAtEnd()) return '\0';
+        return source.charAt(current);
     }
 
     private char advance() {
